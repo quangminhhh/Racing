@@ -490,6 +490,14 @@
             lastEnvChangeScore = 0;
             changeEnvironment(0);
 
+            // Reset camera shake parameters and camera position
+            cameraShake.active = false;
+            cameraShake.duration = 0;
+            camera.position.set(0, 3, 5);
+            camera.lookAt(0, 0, 0);
+            cameraShake.originalPosition.copy(camera.position);
+            cameraShake.originalRotation.copy(camera.rotation);
+
             gameActive = true;
             gamePaused = false; // Ensure game is not paused
             car.position.set(LANE_POSITIONS[1], 0, 3); // Reset car to middle lane
