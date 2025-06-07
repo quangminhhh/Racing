@@ -34,6 +34,7 @@
         const pauseButton = document.getElementById('pause-button'); // New pause button
         const resumeButton = document.getElementById('resume-button'); // New resume button
         const muteButton = document.getElementById('mute-button'); // New mute button
+        const volumeSlider = document.getElementById('volume-slider');
         const countdownDisplay = document.getElementById('countdown-display'); // New countdown display
         const weatherDisplay = document.getElementById('weather-display');
         const weatherToggleButton = document.getElementById('weather-toggle');
@@ -70,7 +71,7 @@
         let mouseY = 0;
 
         // Audio setup
-        let scoreSynth, crashSynth, backgroundMusic;
+        let scoreSynth, crashSynth, backgroundMusic, volumeControl;
         let isMuted = false;
 
         const TIME_OF_DAY_SEQUENCE = ['sunrise', 'day', 'sunset', 'night'];
@@ -137,6 +138,7 @@
          * Initializes audio context and synths.
          */
         function initAudio() {
+            volumeControl = new Tone.Gain(1).toDestination();
             // Synth for score sound (simple click)
             scoreSynth = new Tone.PolySynth(Tone.Synth, {
                 oscillator: {
@@ -148,10 +150,10 @@
                     sustain: 0.01,
                     release: 0.1
                 }
-            }).toDestination();
+            }).connect(volumeControl);
 
             // Synth for crash sound (noise)
-            crashSynth = new Tone.NoiseSynth().toDestination();
+            crashSynth = new Tone.NoiseSynth().connect(volumeControl);
 
             // Background music (simple loop)
             backgroundMusic = new Tone.Loop(time => {
@@ -320,6 +322,7 @@
 
             // Initialize audio
             initAudio();
+            volumeSlider.value = volumeControl.gain.value;
 
             // Update UI elements
             updateScoreDisplay();
@@ -337,6 +340,11 @@
             pauseButton.addEventListener('click', togglePause);
             resumeButton.addEventListener('click', togglePause);
             muteButton.addEventListener('click', toggleMute);
+            volumeSlider.addEventListener('input', () => {
+                if (volumeControl) {
+                    volumeControl.gain.value = parseFloat(volumeSlider.value);
+                }
+            });
             weatherToggleButton.addEventListener('click', cycleWeather);
 
             // Touch controls for mobile - Refactored for cleaner code
