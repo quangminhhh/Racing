@@ -38,6 +38,9 @@
         const countdownDisplay = document.getElementById('countdown-display'); // New countdown display
         const weatherDisplay = document.getElementById('weather-display');
         const weatherToggleButton = document.getElementById('weather-toggle');
+        const helpButton = document.getElementById('help-button');
+        const helpOverlay = document.getElementById('help-overlay');
+        const closeHelpButton = document.getElementById('close-help-button');
 
         // Game parameters
         const INITIAL_CAR_SPEED = 0.05; // Car's horizontal movement speed
@@ -346,6 +349,12 @@
                 }
             });
             weatherToggleButton.addEventListener('click', cycleWeather);
+            helpButton.addEventListener('click', () => {
+                helpOverlay.classList.remove('hidden');
+            });
+            closeHelpButton.addEventListener('click', () => {
+                helpOverlay.classList.add('hidden');
+            });
 
             // Touch controls for mobile - Refactored for cleaner code
             const handleTouchStart = (e, direction) => { e.preventDefault(); keys[direction] = true; };
