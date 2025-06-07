@@ -15,17 +15,19 @@
 <body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
     <h1 class="text-4xl font-bold mb-6 text-yellow-400">Trò Chơi Đua Xe 3D</h1>
 
-    <div id="game-info" class="game-info text-xl">
-        <div id="score-display">Điểm: 0</div>
-        <div id="high-score-display">Điểm cao: 0</div>
-        <div id="difficulty-display">Độ khó: 1</div>
-        <div id="weather-display">Thời tiết: Quang đãng</div>
-    </div>
+    <div class="hud-container">
+        <div id="game-info" class="game-info text-xl">
+            <div id="score-display">Điểm: 0</div>
+            <div id="high-score-display">Điểm cao: 0</div>
+            <div id="difficulty-display">Độ khó: 1</div>
+            <div id="weather-display">Thời tiết: Quang đãng</div>
+        </div>
 
-    <div class="pause-mute-buttons">
-        <button id="pause-button">Tạm dừng</button>
-        <button id="mute-button">Tắt âm</button>
-        <button id="weather-toggle">Đổi Thời Tiết</button>
+        <div class="pause-mute-buttons">
+            <button id="pause-button">Tạm dừng</button>
+            <button id="mute-button">Tắt âm</button>
+            <button id="weather-toggle">Đổi Thời Tiết</button>
+        </div>
     </div>
 
     <div class="game-container w-full max-w-4xl h-auto aspect-video flex justify-center items-center">
