@@ -75,3 +75,21 @@ This project is released under the [MIT License](LICENSE).
 <div id="boost-bar-inner" class="bar-inner h-4 rounded-lg transition-all boost-bar-inner"></div>
 <div id="boost-timer-inner" class="h-5 rounded-full bg-gradient-to-r from-yellow-300 to-pink-400 transition-all boost-timer-inner"></div>
 ```
+
+## Mới: Hiệu ứng "quá tải" (Overload) cho Thanh Boost
+
+- Khi boost được kích hoạt, thanh boost sẽ có hiệu ứng "quá tải": viền rung lắc mạnh hơn, màu sắc rực rỡ hơn, và hiệu ứng gợn sóng (ripple effect) chạy dọc theo thanh.
+- Hiệu ứng này giúp người chơi dễ dàng nhận biết trạng thái boost đang hoạt động và tăng cảm giác tốc độ.
+
+### Sử dụng
+- Khi thanh boost đầy, hiệu ứng "full" sẽ xuất hiện như trước.
+- Khi boost được kích hoạt, hiệu ứng "overload" sẽ tự động hiển thị trên thanh boost.
+- Không cần thao tác gì thêm, chỉ cần chơi như bình thường để trải nghiệm hiệu ứng mới.
+
+## Thay đổi: Tăng tốc độ hồi boost khi vượt chướng ngại vật
+
+- Khi vượt qua một chướng ngại vật, thanh boost sẽ tăng +4 thay vì +2 như trước (tăng gấp đôi tốc độ hồi boost).
+- Giúp người chơi dễ dàng kích hoạt boost hơn, gameplay trở nên nhanh và hấp dẫn hơn.
+
+## Tính năng mới
+- Khi người chơi ghi điểm, điểm số sẽ hiển thị hiệu ứng pop-up bay lên, phát sáng và mờ dần, đi kèm âm thanh "ting" nhẹ nhàng.
