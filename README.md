@@ -32,3 +32,7 @@ Planned enhancements include:
 - Dynamic weather effects such as rain or fog.
 
 Feel free to submit issues or pull requests with additional ideas!
+
+## License
+
+This project is released under the [MIT License](LICENSE).
