@@ -65,6 +65,34 @@
         let scoreSynth, crashSynth, backgroundMusic;
         let isMuted = false;
 
+        // Environment configurations
+        const environmentConfigs = [
+            {
+                sideObject: 'tree',
+                treeColor: 0x228B22,
+                buildingColor: 0x808080,
+                roadTexture: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/hardwood2_diffuse.jpg'
+            },
+            {
+                sideObject: 'building',
+                treeColor: 0xffa500,
+                buildingColor: 0x999999,
+                roadTexture: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/brick_diffuse.jpg'
+            },
+            {
+                sideObject: 'tree',
+                treeColor: 0x00ff00,
+                buildingColor: 0x777777,
+                roadTexture: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/terrain/grasslight-big.jpg'
+            }
+        ];
+
+        let currentEnvironmentIndex = 0;
+        let currentEnvironment = environmentConfigs[currentEnvironmentIndex];
+        const textureLoader = new THREE.TextureLoader();
+        let lastEnvChangeScore = 0;
+        const ENV_CHANGE_SCORE = 20;
+
         /**
          * Initializes audio context and synths.
          */
@@ -156,7 +184,7 @@
 
             // Leaves
             const leavesGeometry = new THREE.ConeGeometry(1, 2, 8);
-            const leavesMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 }); // Forest Green
+            const leavesMaterial = new THREE.MeshPhongMaterial({ color: currentEnvironment.treeColor });
             const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
             leaves.position.y = 2.25; // On top of the trunk
             treeGroup.add(leaves);
@@ -164,6 +192,24 @@
             treeGroup.position.x = xPos;
             treeGroup.position.z = -50; // Far in the distance
             return treeGroup;
+        }
+
+        /**
+         * Creates a simple building model.
+         * @param {number} xPos - X position of the building.
+         * @returns {THREE.Group} A group containing the building mesh.
+         */
+        function createBuilding(xPos) {
+            const buildingGroup = new THREE.Group();
+            const height = 2 + Math.random() * 2;
+            const geometry = new THREE.BoxGeometry(1, height, 1);
+            const material = new THREE.MeshPhongMaterial({ color: currentEnvironment.buildingColor });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.y = height / 2;
+            buildingGroup.add(mesh);
+            buildingGroup.position.x = xPos;
+            buildingGroup.position.z = -50;
+            return buildingGroup;
         }
 
         /**
@@ -209,6 +255,8 @@
             road.position.y = -0.5; // Slightly below the ground
             road.position.z = -40; // Extend far into the distance
             scene.add(road);
+
+            changeEnvironment(0); // Apply initial environment
 
             // Add road markings
             for (let i = 0; i < 20; i++) { // Create multiple segments
@@ -402,6 +450,10 @@
             sideElements.forEach(el => scene.remove(el)); // Clear existing side elements
             sideElements = [];
 
+            currentEnvironmentIndex = 0;
+            lastEnvChangeScore = 0;
+            changeEnvironment(0);
+
             gameActive = true;
             gamePaused = false; // Ensure game is not paused
             car.position.set(LANE_POSITIONS[1], 0, 3); // Reset car to middle lane
@@ -461,6 +513,26 @@
          */
         function updateDifficultyDisplay() {
             difficultyDisplay.textContent = `Độ khó: ${difficultyLevel}`;
+        }
+
+        /**
+         * Changes the environment based on the provided level.
+         * Loads new road textures and resets side objects.
+         * @param {number} level - Environment level index.
+         */
+        function changeEnvironment(level) {
+            currentEnvironmentIndex = level % environmentConfigs.length;
+            currentEnvironment = environmentConfigs[currentEnvironmentIndex];
+
+            // Clear existing side objects
+            sideElements.forEach(el => scene.remove(el));
+            sideElements = [];
+
+            // Apply road texture
+            textureLoader.load(currentEnvironment.roadTexture, texture => {
+                road.material.map = texture;
+                road.material.needsUpdate = true;
+            });
         }
 
 
@@ -643,15 +715,22 @@
                     }
                 }
 
-                // Side elements (trees) spawning
+                // Side elements spawning
                 const currentTime = Date.now();
                 if (currentTime - lastSideElementSpawnTime > SIDE_ELEMENT_INTERVAL) {
-                    // Spawn trees on both sides
-                    const treeLeft = createTree(-7 + Math.random() * 0.5); // Slightly varied x position
-                    const treeRight = createTree(7 - Math.random() * 0.5);
-                    scene.add(treeLeft);
-                    scene.add(treeRight);
-                    sideElements.push(treeLeft, treeRight);
+                    if (currentEnvironment.sideObject === 'building') {
+                        const bLeft = createBuilding(-7 + Math.random() * 0.5);
+                        const bRight = createBuilding(7 - Math.random() * 0.5);
+                        scene.add(bLeft);
+                        scene.add(bRight);
+                        sideElements.push(bLeft, bRight);
+                    } else {
+                        const treeLeft = createTree(-7 + Math.random() * 0.5);
+                        const treeRight = createTree(7 - Math.random() * 0.5);
+                        scene.add(treeLeft);
+                        scene.add(treeRight);
+                        sideElements.push(treeLeft, treeRight);
+                    }
                     lastSideElementSpawnTime = currentTime;
                 }
 
@@ -691,6 +770,11 @@
                             currentRoadSpeed *= 1.05; // Increase speed by 5%
                             currentObstacleInterval = Math.max(200, currentObstacleInterval * 0.95); // Decrease interval by 5%, minimum 200ms
                             Tone.Transport.bpm.value += 5; // Slightly increase music tempo
+                        }
+
+                        if (score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
+                            lastEnvChangeScore = score;
+                            changeEnvironment(currentEnvironmentIndex + 1);
                         }
                     }
 
