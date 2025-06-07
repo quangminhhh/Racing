@@ -68,11 +68,6 @@
             right: false
         };
 
-        // Mouse for camera rotation (optional, for viewing the scene)
-        let isMouseDown = false;
-        let mouseX = 0;
-        let mouseY = 0;
-
         // Audio setup
         let scoreSynth, crashSynth, backgroundMusic, volumeControl;
         let isMuted = false;
@@ -372,31 +367,6 @@
             applyTimeOfDaySettings(weatherState.timeOfDay);
             updateFog();
             updateWeatherDisplay();
-
-
-            // Mouse camera control
-            renderer.domElement.addEventListener('mousedown', (e) => {
-                isMouseDown = true;
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-            });
-            renderer.domElement.addEventListener('mouseup', () => {
-                isMouseDown = false;
-            });
-            renderer.domElement.addEventListener('mousemove', (e) => {
-                if (isMouseDown) {
-                    const deltaX = e.clientX - mouseX;
-                    const deltaY = e.clientY - mouseY;
-                    mouseX = e.clientX;
-                    mouseY = e.clientY;
-
-                    // Rotate camera around the scene
-                    const rotationSpeed = 0.01;
-                    camera.rotation.y -= deltaX * rotationSpeed;
-                    camera.rotation.x -= deltaY * rotationSpeed;
-                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x)); // Clamp vertical rotation
-                }
-            });
         }
 
         /**
