@@ -292,6 +292,11 @@
             // Create road (a long plane)
             const roadGeometry = new THREE.PlaneGeometry(10, 100); // Width, Length
             const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x606060, transparent: true, opacity: 1 }); // Grey color for road
+            if (roadMaterial.map) {
+                roadMaterial.map.wrapS = roadMaterial.map.wrapT = THREE.RepeatWrapping;
+                roadMaterial.map.repeat.set(1, 10);
+                roadMaterial.map.needsUpdate = true;
+            }
             road = new THREE.Mesh(roadGeometry, roadMaterial);
             road.rotation.x = -Math.PI / 2; // Rotate to be horizontal
             road.position.y = -0.5; // Slightly below the ground
@@ -680,6 +685,12 @@
                 transparent: true,
                 opacity: 0
             });
+            if (newMaterial.map) {
+                newMaterial.map.wrapS = newMaterial.map.wrapT = THREE.RepeatWrapping;
+                newMaterial.map.repeat.set(1, 10);
+                newMaterial.map.needsUpdate = true;
+                newMaterial.map.offset.set(0, 0);
+            }
             const newRoad = new THREE.Mesh(road.geometry.clone(), newMaterial);
             newRoad.rotation.copy(road.rotation);
             newRoad.position.copy(road.position);
@@ -854,14 +865,12 @@
                 const targetRotationZ = (LANE_POSITIONS[currentLane] - car.position.x) * 0.1; // More tilt when further from target lane
                 car.rotation.z += (targetRotationZ - car.rotation.z) * 0.1; // Smooth interpolation
 
-                // Road movement (visual effect)
-                road.position.z += currentRoadSpeed;
-                if (transitionRoad) {
-                    transitionRoad.position.z += currentRoadSpeed;
+                // Road texture scrolling
+                if (road.material.map) {
+                    road.material.map.offset.y -= currentRoadSpeed * 0.02;
                 }
-                if (road.position.z > 0) {
-                    road.position.z = -40; // Reset road position to create continuous scrolling
-                    if (transitionRoad) transitionRoad.position.z = -40;
+                if (transitionRoad && transitionRoad.material.map) {
+                    transitionRoad.material.map.offset.y -= currentRoadSpeed * 0.02;
                 }
 
                 if (isTransitioning && transitionRoad) {
