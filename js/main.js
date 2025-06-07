@@ -6,6 +6,10 @@
         let sideElements = []; // Array to store trees and other side elements
         let ambientLight, directionalLight, skybox;
         let rainSystem, rainGeometry;
+        let transitionRoad = null;
+        let isTransitioning = false;
+        let fadeStartTime = 0;
+        const FADE_DURATION = 1000; // milliseconds for environment transitions
 
         let score = 0;
         let highScore = localStorage.getItem('carRacingHighScore') || 0;
@@ -107,6 +111,21 @@
                 roadTexture: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/terrain/grasslight-big.jpg'
             }
         ];
+
+        const preloadedRoadTextures = [];
+
+        /**
+         * Preloads all road textures so switching environments does not cause a delay.
+         */
+        function preloadRoadTextures() {
+            let loaded = 0;
+            environmentConfigs.forEach((config, i) => {
+                textureLoader.load(config.roadTexture, tex => {
+                    preloadedRoadTextures[i] = tex;
+                    loaded++;
+                });
+            });
+        }
 
         let currentEnvironmentIndex = 0;
         let currentEnvironment = environmentConfigs[currentEnvironmentIndex];
@@ -241,6 +260,8 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x2d3748); // Dark background for the scene
 
+            preloadRoadTextures();
+
             // Create a simple skybox (larger sphere or box around the scene)
             const skyGeometry = new THREE.BoxGeometry(200, 200, 200);
             const skyMaterial = new THREE.MeshBasicMaterial({
@@ -270,7 +291,7 @@
 
             // Create road (a long plane)
             const roadGeometry = new THREE.PlaneGeometry(10, 100); // Width, Length
-            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x606060 }); // Grey color for road
+            const roadMaterial = new THREE.MeshLambertMaterial({ color: 0x606060, transparent: true, opacity: 1 }); // Grey color for road
             road = new THREE.Mesh(roadGeometry, roadMaterial);
             road.rotation.x = -Math.PI / 2; // Rotate to be horizontal
             road.position.y = -0.5; // Slightly below the ground
@@ -632,6 +653,8 @@
          * @param {number} level - Environment level index.
          */
         function changeEnvironment(level) {
+            if (isTransitioning) return; // prevent overlapping transitions
+
             currentEnvironmentIndex = level % environmentConfigs.length;
             currentEnvironment = environmentConfigs[currentEnvironmentIndex];
 
@@ -639,11 +662,31 @@
             sideElements.forEach(el => scene.remove(el));
             sideElements = [];
 
-            // Apply road texture
-            textureLoader.load(currentEnvironment.roadTexture, texture => {
-                road.material.map = texture;
-                road.material.needsUpdate = true;
+            const tex = preloadedRoadTextures[currentEnvironmentIndex];
+            if (tex) {
+                startRoadTransition(tex);
+            } else {
+                textureLoader.load(currentEnvironment.roadTexture, startRoadTransition);
+            }
+        }
+
+        /**
+         * Begins a fade transition between the current road texture and a new one.
+         * @param {THREE.Texture} texture - The texture for the new road surface.
+         */
+        function startRoadTransition(texture) {
+            const newMaterial = new THREE.MeshLambertMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 0
             });
+            const newRoad = new THREE.Mesh(road.geometry.clone(), newMaterial);
+            newRoad.rotation.copy(road.rotation);
+            newRoad.position.copy(road.position);
+            scene.add(newRoad);
+            transitionRoad = newRoad;
+            fadeStartTime = Date.now();
+            isTransitioning = true;
         }
 
 
@@ -813,8 +856,25 @@
 
                 // Road movement (visual effect)
                 road.position.z += currentRoadSpeed;
+                if (transitionRoad) {
+                    transitionRoad.position.z += currentRoadSpeed;
+                }
                 if (road.position.z > 0) {
                     road.position.z = -40; // Reset road position to create continuous scrolling
+                    if (transitionRoad) transitionRoad.position.z = -40;
+                }
+
+                if (isTransitioning && transitionRoad) {
+                    const elapsed = Date.now() - fadeStartTime;
+                    const progress = Math.min(elapsed / FADE_DURATION, 1);
+                    transitionRoad.material.opacity = progress;
+                    road.material.opacity = 1 - progress;
+                    if (progress >= 1) {
+                        scene.remove(road);
+                        road = transitionRoad;
+                        transitionRoad = null;
+                        isTransitioning = false;
+                    }
                 }
 
                 // Road markings movement
@@ -883,7 +943,7 @@
                             Tone.Transport.bpm.value += 5; // Slightly increase music tempo
                         }
 
-                if (score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
+                if (!isTransitioning && score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
                     lastEnvChangeScore = score;
                     changeEnvironment(currentEnvironmentIndex + 1);
                 }
