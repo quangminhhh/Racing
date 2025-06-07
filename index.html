@@ -11,6 +11,8 @@
     <!-- Tone.js CDN for sound effects -->
     <script src="https://unpkg.com/tone@14.7.58/build/Tone.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <!-- Google Fonts: Orbitron & Rajdhani for gaming style -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
     <h1 class="text-4xl font-bold mb-6 text-yellow-400">Trò Chơi Đua Xe 3D</h1>
@@ -22,13 +24,42 @@
             <div id="difficulty-display">Độ khó: 1</div>
             <div id="weather-display">Thời tiết: Quang đãng</div>
         </div>
-
+        <!-- Minimap HUD -->
+        <div id="minimap" class="minimap top-4 right-4 absolute z-30 w-32 h-32 bg-black bg-opacity-60 rounded-lg border-2 border-yellow-400 flex flex-col items-center justify-center">
+            <span class="text-xs text-yellow-300 font-bold">Minimap</span>
+            <canvas id="minimap-canvas" width="100" height="100" class="rounded"></canvas>
+        </div>
+        <!-- Progress Bars - Only Boost Bar -->
+        <div id="progress-bars" class="flex flex-col gap-2 absolute left-4 top-4 z-30">
+            <div class="progress-bar boost-bar flex items-center relative">
+                <span class="text-sm mr-3 font-bold text-yellow-300">BOOST</span>
+                <div class="bar-outer w-40 h-4 bg-gray-700 rounded-lg border border-yellow-400">
+                    <div id="boost-bar-inner" class="bar-inner h-4 rounded-lg transition-all" style="width:50%;background:#ffff00"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Achievement Notification Popup -->
+        <div id="achievement-popup" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 hidden px-6 py-3 bg-gradient-to-r from-yellow-400 to-pink-500 text-white font-bold rounded-xl shadow-lg text-lg animate-bounce"></div>
+        <!-- Badge Collection -->
+        <div id="badge-collection" class="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2"></div>
         <div class="pause-mute-buttons">
-            <button id="pause-button">Tạm dừng</button>
-            <button id="mute-button">Tắt âm</button>
+            <button id="pause-button" class="game-button animated-fade-in" title="Tạm dừng">
+                <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="4" width="4" height="16"/><rect x="15" y="4" width="4" height="16"/></svg>
+                Tạm dừng
+            </button>
+            <button id="mute-button" class="game-button animated-fade-in" title="Tắt âm">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-.77-3.29-2-4.29V7a1 1 0 0 0-1.7-.71L9 9H6a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h3l3.8 2.71A1 1 0 0 0 15 17v-0.71c1.23-1 2-2.52 2-4.29z"/><line x1="19" y1="5" x2="5" y2="19" stroke="currentColor" stroke-width="2"/></svg>
+                Tắt âm
+            </button>
             <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
-            <button id="weather-toggle">Đổi Thời Tiết</button>
-            <button id="help-button">Hướng Dẫn</button>
+            <button id="weather-toggle" class="game-button animated-fade-in" title="Đổi Thời Tiết">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                Đổi Thời Tiết
+            </button>
+            <button id="help-button" class="game-button animated-fade-in" title="Hướng Dẫn">
+                <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-1M12 8a2 2 0 0 1 2 2c0 1-2 1.5-2 3"/></svg>
+                Hướng Dẫn
+            </button>
         </div>
     </div>
 
@@ -40,32 +71,66 @@
         <div id="start-overlay" class="game-overlay">
             <h2 class="text-3xl font-bold mb-4">Trò Chơi Đua Xe</h2>
             <p class="text-xl mb-8">Tránh chướng ngại vật!</p>
-            <button id="start-button">Bắt Đầu</button>
+            <button id="start-button" class="game-button animated-fade-in" title="Bắt đầu">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg>
+                Bắt Đầu
+            </button>
         </div>
 
         <div id="game-over-overlay" class="game-overlay hidden">
             <h2 class="text-3xl font-bold mb-4">Trò Chơi Kết Thúc!</h2>
             <p class="text-xl mb-4">Điểm của bạn: <span id="final-score">0</span></p>
             <p class="text-xl mb-8">Điểm cao: <span id="final-high-score">0</span></p>
-            <button id="restart-button">Chơi Lại</button>
+            <button id="restart-button" class="game-button animated-fade-in" title="Chơi lại">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6a6 6 0 1 1-6-6"/></svg>
+                Chơi Lại
+            </button>
         </div>
 
         <div id="pause-overlay" class="game-overlay hidden">
             <h2 class="text-3xl font-bold mb-4">Trò Chơi Đã Tạm Dừng</h2>
-            <button id="resume-button">Tiếp tục</button>
+            <button id="resume-button" class="game-button animated-fade-in" title="Tiếp tục">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="8,5 19,12 8,19" fill="currentColor"/></svg>
+                Tiếp tục
+            </button>
         </div>
 
         <div id="help-overlay" class="game-overlay hidden">
             <h2 class="text-3xl font-bold mb-4">Hướng Dẫn</h2>
             <p class="text-lg mb-4 text-center px-4">Sử dụng phím mũi tên trái/phải hoặc các nút trên màn hình để đổi làn. Nhấn P để tạm dừng, M để tắt âm.</p>
-            <button id="close-help-button">Đóng</button>
+            <button id="close-help-button" class="game-button animated-fade-in" title="Đóng">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/></svg>
+                Đóng
+            </button>
+        </div>
+
+        <!-- Boost Timer Bar (centered, only visible when boost is active) -->
+        <div id="boost-timer-bar" class="fixed top-10 left-1/2 transform -translate-x-1/2 z-50 hidden w-64 h-5 bg-gray-800 rounded-full border-2 border-yellow-400 flex items-center shadow-lg">
+            <div id="boost-timer-inner" class="h-5 rounded-full bg-gradient-to-r from-yellow-300 to-pink-400 transition-all" style="width:100%"></div>
+            <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-yellow-900 drop-shadow">BOOST!</span>
+        </div>
+
+        <!-- Boost Ready Notification (centered, highly visible) -->
+        <div id="boost-ready-notification" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 hidden">
+            <div class="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 text-black px-8 py-4 rounded-2xl border-4 border-yellow-500 shadow-2xl animate-pulse">
+                <div class="text-center">
+                    <div class="text-3xl font-black mb-2">⚡ BOOST READY! ⚡</div>
+                    <div class="text-xl font-bold">Nhấn [SPACE] để kích hoạt!</div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Mobile control buttons -->
     <div class="control-buttons md:hidden">
-        <button id="left-button">←</button>
-        <button id="right-button">→</button>
+        <button id="left-button" class="game-button animated-fade-in" title="Sang trái">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            ←
+        </button>
+        <button id="right-button" class="game-button animated-fade-in" title="Sang phải">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            →
+        </button>
     </div>
 
     <script type="module" src="js/main.js"></script>

@@ -1,7 +1,7 @@
-        body {
+body {
             margin: 0;
             overflow: hidden; /* Prevent scrollbars due to canvas */
-            font-family: "Inter", sans-serif;
+            font-family: 'Orbitron', 'Rajdhani', 'Inter', sans-serif;
             background-color: #1a202c; /* Dark background */
             display: flex;
             flex-direction: column;
@@ -164,4 +164,307 @@
         }
         #countdown-display.show {
             opacity: 1;
+        }
+
+        /* Hidden class for overlays */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Modern gaming gradient button */
+        .game-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            font-family: 'Orbitron', 'Rajdhani', 'Inter', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 0.75rem 2.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(.4,2,.3,1);
+            letter-spacing: 1px;
+            outline: none;
+            margin: 0.5rem 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .game-button:hover {
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+            filter: brightness(1.1);
+        }
+
+        /* Icon style for vector icons */
+        .icon {
+            width: 1.5em;
+            height: 1.5em;
+            vertical-align: middle;
+            display: inline-block;
+            fill: currentColor;
+            transition: transform 0.2s cubic-bezier(.4,2,.3,1);
+        }
+        .game-button:hover .icon {
+            transform: scale(1.2) rotate(-8deg);
+        }
+
+        /* Simple fade-in animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animated-fade-in {
+            animation: fadeIn 0.7s cubic-bezier(.4,2,.3,1) both;
+        }
+
+        /* Minimap styles */
+        .minimap {
+            box-shadow: 0 4px 24px rgba(255, 215, 0, 0.2);
+            border-radius: 1rem;
+            border: 2px solid #FFD700;
+            background: rgba(0,0,0,0.7);
+            padding: 0.5rem;
+            width: 8rem;
+            height: 8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #minimap-canvas {
+            width: 100px;
+            height: 100px;
+            background: #222;
+            border-radius: 0.75rem;
+            border: 1px solid #FFD700;
+        }
+
+        /* Progress bar styles - Enhanced for boost only */
+        #progress-bars {
+            gap: 0.5rem;
+        }
+        .progress-bar .bar-outer {
+            background: #222;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            width: 10rem;
+            height: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .bar-inner {
+            transition: width 0.4s cubic-bezier(.4,2,.3,1), background 0.3s;
+            height: 100%;
+        }
+        .boost-bar .bar-inner {
+            background: linear-gradient(90deg, #ffff00, #ffd700, #ffff00);
+            box-shadow: 0 0 8px #ffd70066;
+        }
+
+        /* Achievement popup */
+        #achievement-popup {
+            min-width: 220px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-family: 'Orbitron', 'Rajdhani', sans-serif;
+            background: linear-gradient(90deg, #FFD700 0%, #FF69B4 100%);
+            color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(255, 215, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s, transform 0.4s;
+            z-index: 100;
+        }
+        #achievement-popup.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        /* Badge collection */
+        #badge-collection {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        .badge {
+            background: linear-gradient(135deg, #FFD700 0%, #FF69B4 100%);
+            color: #fff;
+            font-weight: bold;
+            border-radius: 0.75rem;
+            padding: 0.3rem 1rem;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: fadeIn 0.7s cubic-bezier(.4,2,.3,1) both;
+        }
+
+        /* Boost bar full effect - Enhanced and more noticeable */
+        #boost-bar-inner.full {
+            animation: boostPulse 0.6s infinite alternate, boostShake 0.15s infinite linear;
+            box-shadow: 0 0 25px 8px #ffe066, 0 0 50px 15px #ffd70066, inset 0 0 15px #ffffff66;
+            transform: scale(1.1);
+            z-index: 2;
+            filter: brightness(1.5) saturate(2);
+        }
+        @keyframes boostPulse {
+            0% {
+                filter: brightness(1.5) saturate(2) hue-rotate(0deg);
+                box-shadow: 0 0 25px 8px #ffe066, 0 0 50px 15px #ffd70066;
+            }
+            100% {
+                filter: brightness(2.2) saturate(3) hue-rotate(10deg);
+                box-shadow: 0 0 35px 12px #ffff00, 0 0 70px 20px #ffd700aa;
+            }
+        }
+        @keyframes boostShake {
+            0% { transform: scale(1.1) translateX(0); }
+            20% { transform: scale(1.15) translateX(-2px); }
+            40% { transform: scale(1.2) translateX(2px); }
+            60% { transform: scale(1.15) translateX(-2px); }
+            80% { transform: scale(1.2) translateX(2px); }
+            100% { transform: scale(1.1) translateX(0); }
+        }
+
+        /* Boost Ready Notification - Enhanced */
+        #boost-ready-notification {
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            pointer-events: none;
+            z-index: 100;
+        }
+        #boost-ready-notification.show {
+            display: block !important;
+            animation: boostReadyPulse 1.5s infinite, boostReadyShake 0.2s infinite;
+        }
+        @keyframes boostReadyPulse {
+            0%, 100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.95;
+                filter: brightness(1);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.05);
+                opacity: 1;
+                filter: brightness(1.2) drop-shadow(0 0 20px #ffd700);
+            }
+        }
+        @keyframes boostReadyShake {
+            0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+            25% { transform: translate(-50%, -50%) translateX(-2px); }
+            75% { transform: translate(-50%, -50%) translateX(2px); }
+        }
+
+        /* Boost timer bar styles */
+        #boost-timer-bar {
+            box-shadow: 0 4px 24px #ffd70055;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(40,40,40,0.95);
+            border: 2px solid #FFD700;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+        #boost-timer-inner {
+            transition: width 0.2s cubic-bezier(.4,2,.3,1);
+            background: linear-gradient(90deg, #ffe066 0%, #ff69b4 100%);
+            box-shadow: 0 0 16px #ffd70099;
+        }
+        #boost-timer-bar.show {
+            display: flex !important;
+            opacity: 1;
+        }
+        #boost-timer-bar {
+            opacity: 0;
+            display: none;
+        }
+
+        /* Mobile responsiveness improvements */
+        @media (max-width: 768px) {
+            .game-container {
+                height: 70vh;
+                padding: 0.5rem;
+            }
+
+            .hud-container {
+                padding: 0.25rem 0.5rem;
+                gap: 0.5rem;
+            }
+
+            .game-info {
+                min-width: 250px;
+                padding: 0.25rem 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            #minimap {
+                width: 100px;
+                height: 100px;
+                top: 2rem;
+                right: 2rem;
+            }
+
+            #progress-bars {
+                left: 2rem;
+                top: 2rem;
+            }
+
+            .progress-bar .bar-outer {
+                width: 8rem;
+                height: 0.75rem;
+            }
+
+            #boost-ready-notification {
+                top: 40%;
+            }
+
+            #boost-ready-notification div {
+                padding: 1rem 2rem;
+                border-radius: 1rem;
+            }
+
+            #boost-ready-notification .text-3xl {
+                font-size: 1.5rem;
+            }
+
+            #boost-ready-notification .text-xl {
+                font-size: 1rem;
+            }
+
+            .control-buttons {
+                margin-top: 0.5rem;
+                max-width: 250px;
+            }
+
+            .control-buttons button {
+                padding: 0.75rem 1.5rem;
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Improved accessibility */
+        .progress-bar:focus-within {
+            outline: 2px solid #ffd700;
+            outline-offset: 2px;
+        }
+
+        button:focus {
+            outline: 2px solid #ffd700;
+            outline-offset: 2px;
+        }
+
+        /* Enhanced visual feedback */
+        .achievement-earned {
+            animation: achievementBounce 0.6s ease-out;
+        }
+
+        @keyframes achievementBounce {
+            0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+            50% { transform: scale(1.1) translateY(-5px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
         }

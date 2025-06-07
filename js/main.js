@@ -1,4 +1,4 @@
-        // Import necessary components from Three.js
+// Import necessary components from Three.js
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
 
         let scene, camera, renderer, car, road, obstacles = [];
@@ -44,8 +44,8 @@
 
         // Game parameters
         const INITIAL_CAR_SPEED = 0.05; // Car's horizontal movement speed
-        const INITIAL_ROAD_SPEED = 0.5; // Speed at which the road and obstacles move towards the camera
-        const INITIAL_OBSTACLE_INTERVAL = 1000; // Milliseconds between obstacle spawns
+        const INITIAL_ROAD_SPEED = 0.2; // Giảm tốc độ ban đầu để game dễ hơn
+        const INITIAL_OBSTACLE_INTERVAL = 1500; // Tăng khoảng cách spawn để dễ hơn
         let currentRoadSpeed = INITIAL_ROAD_SPEED;
         let currentObstacleInterval = INITIAL_OBSTACLE_INTERVAL;
         let difficultyLevel = 1;
@@ -352,8 +352,11 @@
             helpButton.addEventListener('click', () => {
                 helpOverlay.classList.remove('hidden');
             });
-            closeHelpButton.addEventListener('click', () => {
+            closeHelpButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 helpOverlay.classList.add('hidden');
+                console.log('Help overlay closed');
             });
 
             // Touch controls for mobile - Refactored for cleaner code
@@ -422,6 +425,13 @@
                     // Attempt to change lane
                     if (currentLane < NUM_LANES - 1) {
                         currentLane++;
+                    }
+                } else if (event.key === ' ' || event.code === 'Space') {
+                    event.preventDefault(); // Prevent page scrolling
+                    const isBoostReady = playerStats.boost >= playerStats.maxBoost && !boostActive &&
+                        (boostCooldownTime === null || Date.now() - boostCooldownTime >= BOOST_COOLDOWN_DURATION);
+                    if (isBoostReady) {
+                        activateBoost();
                     }
                 } else if (event.key === 'w' || event.key === 'W') {
                     cycleWeather();
@@ -555,6 +565,20 @@
                 }
             });
 
+            // Reset badges on new game
+            resetBadges();
+
+            // Reset player stats
+            playerStats.health = playerStats.maxHealth;
+            playerStats.boost = 0; // Start with empty boost - player needs to earn it
+            playerStats.speed = 0;
+
+            // Reset boost state
+            boostActive = false;
+            boostInvincible = false;
+
+            achievementStartTime = Date.now();
+
             animate(); // Start the game loop
         }
 
@@ -579,6 +603,9 @@
             gameOverOverlay.classList.remove('hidden');
             // Camera shake effect on collision
             shakeCamera(0.2, 0.05, 500); // Intensity, duration, frames
+
+            playerStats.health = 0;
+            updateProgressBars();
         }
 
         /**
@@ -868,9 +895,255 @@
 
 
         /**
-         * Main animation loop for the game.
+         * --- HUD & Achievement System ---
+         * Progress bar state
          */
+        let playerStats = {
+            speed: 0,
+            maxSpeed: 100,
+            health: 100,
+            maxHealth: 100,
+            boost: 50,
+            maxBoost: 100
+        };
+
+        /**
+         * Achievement system state
+         */
+        let achievements = [
+            { id: 'score10', name: 'Điểm 10!', desc: 'Đạt 10 điểm', unlocked: false, badge: '🏅' },
+            { id: 'score50', name: 'Điểm 50!', desc: 'Đạt 50 điểm', unlocked: false, badge: '🥇' },
+            { id: 'score100', name: 'Điểm 100!', desc: 'Đạt 100 điểm', unlocked: false, badge: '🏆' },
+            { id: 'survivor', name: 'Sinh tồn', desc: 'Không va chạm 60s', unlocked: false, badge: '🛡️' }
+        ];
+        let achievementTimeout = null;
+        let achievementStartTime = null;
+
+        let boostActive = false;
+        let boostDuration = 4000; // ms
+        let boostStartTime = null;
+        let boostInvincible = false;
+        let boostInitialSpeed = null;
+        let boostCooldownTime = null; // Track when boost was last used
+        const BOOST_SPEED_MULTIPLIER = 1.7;
+        const BOOST_COOLDOWN_DURATION = 3000; // 3 seconds cooldown after boost ends
+
+        /**
+         * Updates the progress bars on the HUD.
+         */
+        function updateProgressBars() {
+            // Animate width for boost bar
+            const boostBar = document.getElementById('boost-bar-inner');
+            const boostReadyNotification = document.getElementById('boost-ready-notification');
+            const boostPercent = (playerStats.boost/playerStats.maxBoost)*100;
+
+            if (boostBar) {
+                boostBar.style.width = `${boostPercent}%`;
+
+                // Check if boost is ready (full boost AND not in cooldown)
+                const isBoostReady = boostPercent >= 100 && !boostActive &&
+                    (boostCooldownTime === null || Date.now() - boostCooldownTime >= BOOST_COOLDOWN_DURATION);
+
+                // Boost full effect
+                if (isBoostReady) {
+                    boostBar.classList.add('full');
+                    // Show boost ready notification
+                    if (boostReadyNotification) {
+                        boostReadyNotification.classList.remove('hidden');
+                        boostReadyNotification.classList.add('show');
+                    }
+                } else {
+                    boostBar.classList.remove('full');
+                    // Hide boost ready notification
+                    if (boostReadyNotification) {
+                        boostReadyNotification.classList.add('hidden');
+                        boostReadyNotification.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        function activateBoost() {
+            // Check if boost is ready (full boost AND not in cooldown)
+            if (playerStats.boost < playerStats.maxBoost) return;
+            if (boostCooldownTime !== null && Date.now() - boostCooldownTime < BOOST_COOLDOWN_DURATION) return;
+
+            boostActive = true;
+            boostStartTime = Date.now();
+            boostInvincible = true;
+            boostInitialSpeed = currentRoadSpeed;
+            currentRoadSpeed = boostInitialSpeed * BOOST_SPEED_MULTIPLIER;
+
+            // Enhanced visual and audio feedback
+            const timerBar = document.getElementById('boost-timer-bar');
+            const readyNotification = document.getElementById('boost-ready-notification');
+
+            // Show timer bar with smooth animation
+            timerBar.classList.remove('hidden');
+            timerBar.classList.add('show');
+
+            // Hide ready notification immediately
+            readyNotification.classList.remove('show');
+            readyNotification.classList.add('hidden');
+
+            // Enhanced car glow effect
+            if (car && car.children) {
+                car.traverse(obj => {
+                    if (obj.material) {
+                        obj.material.emissive = new THREE.Color(0xffff66);
+                        obj.material.emissiveIntensity = 0.5;
+                    }
+                });
+            }
+
+            // Play boost activation sound
+            if (scoreSynth) {
+                scoreSynth.triggerAttackRelease("E5", "8n");
+                setTimeout(() => scoreSynth.triggerAttackRelease("A5", "8n"), 100);
+            }
+
+            // Screen flash effect for boost activation
+            const canvas = renderer.domElement;
+            canvas.style.filter = 'brightness(1.3) saturate(1.5)';
+            setTimeout(() => {
+                canvas.style.filter = '';
+            }, 200);
+        }
+
+        function endBoost() {
+            boostActive = false;
+            boostInvincible = false;
+            playerStats.boost = 0; // Reset boost to 0 after use
+            boostCooldownTime = Date.now(); // Record when boost ended for cooldown tracking
+
+            // Enhanced visual feedback for boost end
+            const timerBar = document.getElementById('boost-timer-bar');
+            timerBar.classList.remove('show');
+            timerBar.classList.add('hidden');
+
+            // Remove invincible effect with smooth transition
+            if (car && car.children) {
+                car.traverse(obj => {
+                    if (obj.material) {
+                        obj.material.emissive = new THREE.Color(0x000000);
+                        obj.material.emissiveIntensity = 0;
+                    }
+                });
+            }
+
+            // Gradually return speed to normal (smoother transition)
+            const speedDeclineInterval = setInterval(() => {
+                if (currentRoadSpeed > boostInitialSpeed) {
+                    currentRoadSpeed = Math.max(boostInitialSpeed, currentRoadSpeed - 0.01);
+                } else {
+                    clearInterval(speedDeclineInterval);
+                    currentRoadSpeed = boostInitialSpeed;
+                }
+            }, 50);
+
+            // Play boost end sound
+            if (scoreSynth) {
+                scoreSynth.triggerAttackRelease("C4", "16n");
+            }
+        }
+
+        /**
+         * Render minimap showing car position and obstacles
+         */
+        function renderMinimap() {
+            const canvas = document.getElementById('minimap-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw lanes
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 3; i++) {
+                const x = (i / 3) * canvas.width;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            // Draw car (bottom center)
+            const carX = (currentLane / (NUM_LANES - 1)) * canvas.width;
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(carX - 3, canvas.height - 10, 6, 8);
+
+            // Draw obstacles
+            ctx.fillStyle = '#ff0000';
+            obstacles.forEach(obstacle => {
+                if (obstacle.position.z < 0 && obstacle.position.z > -30) {
+                    const obstacleX = ((obstacle.position.x + LANE_WIDTH) / (LANE_WIDTH * 2)) * canvas.width;
+                    const obstacleY = ((30 + obstacle.position.z) / 30) * canvas.height;
+                    ctx.fillRect(obstacleX - 2, obstacleY - 2, 4, 4);
+                }
+            });
+        }
+
+        /**
+         * Unlock an achievement and show notification with enhanced effects
+         */
+        function unlockAchievement(id) {
+            const achievement = achievements.find(a => a.id === id);
+            if (!achievement || achievement.unlocked) return;
+
+            achievement.unlocked = true;
+
+            // Enhanced popup notification with sound
+            const popup = document.getElementById('achievement-popup');
+            popup.innerHTML = `
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">${achievement.badge}</div>
+                <div style="font-weight: bold; font-size: 1.1rem;">${achievement.name}</div>
+                <div style="font-size: 0.9rem; opacity: 0.8;">${achievement.desc}</div>
+            `;
+            popup.classList.remove('hidden');
+            popup.classList.add('show', 'achievement-earned');
+
+            // Add badge to collection with enhanced animation
+            const badge = document.createElement('div');
+            badge.className = 'badge achievement-earned';
+            badge.innerHTML = `${achievement.badge} ${achievement.name}`;
+            badge.style.animationDelay = '0.2s';
+            document.getElementById('badge-collection').appendChild(badge);
+
+            // Play achievement sound (higher pitch for positive feedback)
+            if (scoreSynth) {
+                scoreSynth.triggerAttackRelease("G5", "16n");
+                setTimeout(() => scoreSynth.triggerAttackRelease("C6", "16n"), 100);
+            }
+
+            // Hide popup after 4 seconds (longer for better readability)
+            setTimeout(() => {
+                popup.classList.remove('show', 'achievement-earned');
+                setTimeout(() => popup.classList.add('hidden'), 400);
+            }, 4000);
+        }
+
+        /**
+         * Reset all achievements for new game
+         */
+        function resetBadges() {
+            achievements.forEach(achievement => achievement.unlocked = false);
+            document.getElementById('badge-collection').innerHTML = '';
+        }
+
         function animate() {
+            if (!gameActive && !gamePaused) {
+                // Continue rendering even when game is not active (for start screen)
+                renderer.render(scene, camera);
+                animationFrameId = requestAnimationFrame(animate);
+                return;
+            }
+
             animationFrameId = requestAnimationFrame(animate);
 
             if (gameActive && !gamePaused) {
@@ -884,7 +1157,7 @@
 
                 // Road texture scrolling
                 if (road.material.map) {
-                    road.material.map.offset.y -= currentRoadSpeed * 0.02;
+                    road.material.map.offset.y += currentRoadSpeed * 0.02;
                 }
                 if (transitionRoad && transitionRoad.material.map) {
                     transitionRoad.material.map.offset.y -= currentRoadSpeed * 0.02;
@@ -906,7 +1179,7 @@
                 // Road markings movement
                 for (let i = roadMarkings.length - 1; i >= 0; i--) {
                     const marking = roadMarkings[i];
-                    marking.position.z += currentRoadSpeed;
+                    marking.position.z += currentRoadSpeed * 0.2; // Đồng bộ tốc độ với texture mặt đường
                     if (marking.position.z > camera.position.z + 5) { // Reset when off-screen
                         marking.position.z = -50;
                     }
@@ -960,6 +1233,11 @@
                         updateScoreDisplay();
                         scoreSynth.triggerAttackRelease("C5", "32n"); // Play score sound
 
+                        // Boost regeneration - only when successfully avoiding obstacles
+                        if (!boostActive && playerStats.boost < playerStats.maxBoost) {
+                            playerStats.boost = Math.min(playerStats.maxBoost, playerStats.boost + 2); // +2 boost per obstacle avoided
+                        }
+
                         // Increase difficulty every 10 points
                         if (score % 10 === 0 && score > 0) {
                             difficultyLevel++;
@@ -969,32 +1247,78 @@
                             Tone.Transport.bpm.value += 5; // Slightly increase music tempo
                         }
 
-                if (!isTransitioning && score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
-                    lastEnvChangeScore = score;
-                    changeEnvironment(currentEnvironmentIndex + 1);
-                }
+                        if (!isTransitioning && score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
+                            lastEnvChangeScore = score;
+                            changeEnvironment(currentEnvironmentIndex + 1);
+                        }
 
-                if (score - lastWeatherChangeScore >= WEATHER_CHANGE_SCORE) {
-                    lastWeatherChangeScore = score;
-                    cycleWeather();
-                }
-            }
+                        if (score - lastWeatherChangeScore >= WEATHER_CHANGE_SCORE) {
+                            lastWeatherChangeScore = score;
+                            cycleWeather();
+                        }
+                    } else {
+                        // Simple AABB collision detection
+                        // Get world bounding boxes for collision
+                        const carBox = new THREE.Box3().setFromObject(car);
+                        const obstacleBox = new THREE.Box3().setFromObject(obstacle);
 
-            // Simple AABB collision detection
-                    // Get world bounding boxes for collision
-                    const carBox = new THREE.Box3().setFromObject(car);
-                    const obstacleBox = new THREE.Box3().setFromObject(obstacle);
-
-                    if (carBox.intersectsBox(obstacleBox)) {
-                        createCollisionParticles(car.position); // Create particles at collision point
-                        endGame(); // Game over on collision
-                        break; // Exit loop immediately after game over
+                        if (carBox.intersectsBox(obstacleBox)) {
+                            if (boostInvincible) {
+                                // Enhanced invincible collision effect
+                                createCollisionParticles(obstacle.position);
+                                // Remove the obstacle and add extra score for invincible collision
+                                scene.remove(obstacle);
+                                obstacles.splice(i, 1);
+                                score += 2; // Bonus points for destroying obstacle while invincible
+                                updateScoreDisplay();
+                                // Play special invincible collision sound
+                                if (scoreSynth) {
+                                    scoreSynth.triggerAttackRelease("F#5", "32n");
+                                }
+                                continue;
+                            } else {
+                                createCollisionParticles(car.position); // Create particles at collision point
+                                endGame(); // Game over on collision
+                                break; // Exit loop immediately after game over
+                            }
+                        }
                     }
                 }
 
                 updateParticles(); // Update collision particles
                 updateCameraShake(); // Update camera shake effect
                 updateRain();
+
+                // --- HUD updates ---
+                // Simulate speed for demo
+                playerStats.speed = Math.min(100, Math.floor(currentRoadSpeed * 20));
+                // Boost regeneration moved to obstacle avoidance logic for better balance
+                updateProgressBars();
+                renderMinimap();
+
+                        // Achievement: score milestones with better timing
+                        if (score === 10) unlockAchievement('score10');
+                        if (score === 50) unlockAchievement('score50');
+                        if (score === 100) unlockAchievement('score100');
+
+                        // Achievement: survive 60s (check every 10 points for performance)
+                        if (score % 10 === 0 && !achievements.find(a=>a.id==='survivor').unlocked) {
+                            if (!achievementStartTime) achievementStartTime = Date.now();
+                            else if (Date.now() - achievementStartTime > 60000) unlockAchievement('survivor');
+                        }
+
+                if (boostActive) {
+                    const elapsed = Date.now() - boostStartTime;
+                    // Update timer bar
+                    const percent = Math.max(0, 1 - elapsed/boostDuration);
+                    document.getElementById('boost-timer-inner').style.width = (percent*100)+"%";
+                    // Gradually reduce speed
+                    currentRoadSpeed = boostInitialSpeed + (BOOST_SPEED_MULTIPLIER-1)*boostInitialSpeed*percent;
+                    // End boost if time's up
+                    if (elapsed >= boostDuration) {
+                        endBoost();
+                    }
+                }
             }
             renderer.render(scene, camera);
         }
@@ -1002,6 +1326,30 @@
         // Initialize Three.js on window load
         window.onload = function () {
             init();
-            // Start the initial render to show the start screen
-            renderer.render(scene, camera);
+
+            // Ensure help overlay can be closed - additional safeguard
+            const helpOverlay = document.getElementById('help-overlay');
+            const closeHelpButton = document.getElementById('close-help-button');
+
+            if (helpOverlay && closeHelpButton) {
+                // Additional event listener as backup
+                closeHelpButton.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    helpOverlay.classList.add('hidden');
+                    console.log('Help overlay closed via backup handler');
+                    return false;
+                };
+
+                // Also allow clicking outside the help content to close
+                helpOverlay.addEventListener('click', function(e) {
+                    if (e.target === helpOverlay) {
+                        helpOverlay.classList.add('hidden');
+                        console.log('Help overlay closed by clicking outside');
+                    }
+                });
+            }
+
+            // Start the animation loop immediately to show the start screen
+            animate();
         };
