@@ -4,6 +4,8 @@
         let scene, camera, renderer, car, road, obstacles = [];
         let roadMarkings = []; // Array to store road marking segments
         let sideElements = []; // Array to store trees and other side elements
+        let ambientLight, directionalLight, skybox;
+        let rainSystem, rainGeometry;
 
         let score = 0;
         let highScore = localStorage.getItem('carRacingHighScore') || 0;
@@ -29,6 +31,8 @@
         const resumeButton = document.getElementById('resume-button'); // New resume button
         const muteButton = document.getElementById('mute-button'); // New mute button
         const countdownDisplay = document.getElementById('countdown-display'); // New countdown display
+        const weatherDisplay = document.getElementById('weather-display');
+        const weatherToggleButton = document.getElementById('weather-toggle');
 
         // Game parameters
         const INITIAL_CAR_SPEED = 0.05; // Car's horizontal movement speed
@@ -64,6 +68,23 @@
         // Audio setup
         let scoreSynth, crashSynth, backgroundMusic;
         let isMuted = false;
+
+        const TIME_OF_DAY_SEQUENCE = ['sunrise', 'day', 'sunset', 'night'];
+        const TIME_LABELS = {
+            sunrise: 'Bình minh',
+            day: 'Ban ngày',
+            sunset: 'Hoàng hôn',
+            night: 'Ban đêm'
+        };
+        let currentTimeIndex = 1;
+        let lastWeatherChangeScore = 0;
+        const WEATHER_CHANGE_SCORE = 30;
+
+        let weatherState = {
+            rainIntensity: 0,
+            fogDensity: 0,
+            timeOfDay: 'day'
+        };
 
         // Environment configurations
         const environmentConfigs = [
@@ -226,7 +247,7 @@
                 color: 0x7ED6DF, // Light blue
                 side: THREE.BackSide // Render inside the box
             });
-            const skybox = new THREE.Mesh(skyGeometry, skyMaterial);
+            skybox = new THREE.Mesh(skyGeometry, skyMaterial);
             scene.add(skybox);
 
             // Set up camera (PerspectiveCamera for 3D view)
@@ -241,9 +262,9 @@
             gameContainer.appendChild(renderer.domElement);
 
             // Add lighting
-            const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+            ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
             scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(0, 10, 5);
             scene.add(directionalLight);
 
@@ -290,6 +311,7 @@
             pauseButton.addEventListener('click', togglePause);
             resumeButton.addEventListener('click', togglePause);
             muteButton.addEventListener('click', toggleMute);
+            weatherToggleButton.addEventListener('click', cycleWeather);
 
             // Touch controls for mobile - Refactored for cleaner code
             const handleTouchStart = (e, direction) => { e.preventDefault(); keys[direction] = true; };
@@ -299,6 +321,11 @@
             leftButton.addEventListener('touchend', (e) => handleTouchEnd(e, 'left'));
             rightButton.addEventListener('touchstart', (e) => handleTouchStart(e, 'right'), { passive: false });
             rightButton.addEventListener('touchend', (e) => handleTouchEnd(e, 'right'));
+
+            initRain();
+            applyTimeOfDaySettings(weatherState.timeOfDay);
+            updateFog();
+            updateWeatherDisplay();
 
 
             // Mouse camera control
@@ -353,6 +380,8 @@
                     if (currentLane < NUM_LANES - 1) {
                         currentLane++;
                     }
+                } else if (event.key === 'w' || event.key === 'W') {
+                    cycleWeather();
                 } else if (event.key === 'p' || event.key === 'P') {
                     togglePause();
                 }
@@ -450,6 +479,13 @@
             sideElements.forEach(el => scene.remove(el)); // Clear existing side elements
             sideElements = [];
 
+            // Reset weather
+            currentTimeIndex = 0;
+            weatherState = { rainIntensity: 0, fogDensity: 0, timeOfDay: 'sunrise' };
+            applyTimeOfDaySettings(weatherState.timeOfDay);
+            updateFog();
+            updateWeatherDisplay();
+
             currentEnvironmentIndex = 0;
             lastEnvChangeScore = 0;
             changeEnvironment(0);
@@ -513,6 +549,73 @@
          */
         function updateDifficultyDisplay() {
             difficultyDisplay.textContent = `Độ khó: ${difficultyLevel}`;
+        }
+
+        function updateWeatherDisplay() {
+            const rainText = weatherState.rainIntensity > 0 ? 'Có mưa' : 'Quang đãng';
+            const fogText = weatherState.fogDensity > 0 ? ', Sương mù' : '';
+            weatherDisplay.textContent = `Thời tiết: ${TIME_LABELS[weatherState.timeOfDay]} - ${rainText}${fogText}`;
+        }
+
+        function applyTimeOfDaySettings(time) {
+            const configs = {
+                sunrise: { sky: 0xFFCF9F, light: 0xFFE4B5, intensity: 0.7 },
+                day: { sky: 0x7ED6DF, light: 0xFFFFFF, intensity: 1 },
+                sunset: { sky: 0xF2994A, light: 0xFFD27F, intensity: 0.6 },
+                night: { sky: 0x001D3D, light: 0xAAAAFF, intensity: 0.3 }
+            };
+            const cfg = configs[time];
+            skybox.material.color.setHex(cfg.sky);
+            directionalLight.color.setHex(cfg.light);
+            directionalLight.intensity = cfg.intensity;
+        }
+
+        function initRain() {
+            const count = 500;
+            rainGeometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] = (Math.random() - 0.5) * 20;
+                positions[i * 3 + 1] = Math.random() * 20 + 5;
+                positions[i * 3 + 2] = -Math.random() * 60;
+            }
+            rainGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const material = new THREE.PointsMaterial({ color: 0xaaaaaa, size: 0.1, transparent: true });
+            rainSystem = new THREE.Points(rainGeometry, material);
+            scene.add(rainSystem);
+        }
+
+        function updateRain() {
+            if (!rainSystem) return;
+            rainSystem.visible = weatherState.rainIntensity > 0;
+            if (weatherState.rainIntensity <= 0) return;
+            const positions = rainGeometry.attributes.position.array;
+            for (let i = 0; i < positions.length; i += 3) {
+                positions[i + 1] -= 0.2 * weatherState.rainIntensity;
+                if (positions[i + 1] < 0) {
+                    positions[i + 1] = Math.random() * 20 + 5;
+                }
+            }
+            rainGeometry.attributes.position.needsUpdate = true;
+        }
+
+        function updateFog() {
+            if (weatherState.fogDensity <= 0) {
+                scene.fog = null;
+                return;
+            }
+            const far = 80 - weatherState.fogDensity * 50;
+            scene.fog = new THREE.Fog(0xaaaaaa, 10, far);
+        }
+
+        function cycleWeather() {
+            currentTimeIndex = (currentTimeIndex + 1) % TIME_OF_DAY_SEQUENCE.length;
+            weatherState.timeOfDay = TIME_OF_DAY_SEQUENCE[currentTimeIndex];
+            weatherState.rainIntensity = Math.random() < 0.5 ? 0 : Math.random();
+            weatherState.fogDensity = Math.random() < 0.5 ? 0 : Math.random();
+            applyTimeOfDaySettings(weatherState.timeOfDay);
+            updateFog();
+            updateWeatherDisplay();
         }
 
         /**
@@ -772,13 +875,18 @@
                             Tone.Transport.bpm.value += 5; // Slightly increase music tempo
                         }
 
-                        if (score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
-                            lastEnvChangeScore = score;
-                            changeEnvironment(currentEnvironmentIndex + 1);
-                        }
-                    }
+                if (score - lastEnvChangeScore >= ENV_CHANGE_SCORE) {
+                    lastEnvChangeScore = score;
+                    changeEnvironment(currentEnvironmentIndex + 1);
+                }
 
-                    // Simple AABB collision detection
+                if (score - lastWeatherChangeScore >= WEATHER_CHANGE_SCORE) {
+                    lastWeatherChangeScore = score;
+                    cycleWeather();
+                }
+            }
+
+            // Simple AABB collision detection
                     // Get world bounding boxes for collision
                     const carBox = new THREE.Box3().setFromObject(car);
                     const obstacleBox = new THREE.Box3().setFromObject(obstacle);
@@ -792,6 +900,7 @@
 
                 updateParticles(); // Update collision particles
                 updateCameraShake(); // Update camera shake effect
+                updateRain();
             }
             renderer.render(scene, camera);
         }
