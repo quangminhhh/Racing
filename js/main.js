@@ -917,23 +917,13 @@
                 // Boost full effect
                 if (isBoostReady) {
                     boostBar.classList.add('full');
-                    boostBar.classList.remove('overload');
                     // Show boost ready notification
                     if (boostReadyNotification) {
                         boostReadyNotification.classList.remove('hidden');
                         boostReadyNotification.classList.add('show');
                     }
-                } else if (boostActive) {
-                    boostBar.classList.remove('full');
-                    boostBar.classList.add('overload');
-                    // Hide boost ready notification
-                    if (boostReadyNotification) {
-                        boostReadyNotification.classList.add('hidden');
-                        boostReadyNotification.classList.remove('show');
-                    }
                 } else {
                     boostBar.classList.remove('full');
-                    boostBar.classList.remove('overload');
                     // Hide boost ready notification
                     if (boostReadyNotification) {
                         boostReadyNotification.classList.add('hidden');
@@ -1116,32 +1106,6 @@
             document.getElementById('badge-collection').innerHTML = '';
         }
 
-        /**
-         * Hiển thị hiệu ứng pop-up điểm số khi ghi điểm
-         * @param {number} value - Số điểm vừa ghi được
-         * @param {string} [type] - Loại điểm ("normal" | "bonus")
-         */
-        function showScorePopup(value, type = "normal") {
-            const container = document.getElementById('score-popup-container');
-            if (!container) return;
-            const popup = document.createElement('div');
-            popup.textContent = value > 0 ? `+${value}` : value;
-            popup.className =
-                "score-popup text-3xl font-bold select-none " +
-                (type === "bonus"
-                    ? "text-pink-400 drop-shadow-lg animate-score-pop-bonus"
-                    : "text-yellow-300 drop-shadow-lg animate-score-pop");
-            container.appendChild(popup);
-            // Remove after animation
-            setTimeout(() => {
-                popup.remove();
-            }, 900);
-            // Phát âm thanh 'ting' nhẹ nhàng hơn
-            if (scoreSynth && !isMuted) {
-                scoreSynth.triggerAttackRelease("A5", "16n", undefined, 0.5);
-            }
-        }
-
         function animate() {
             if (!gameActive && !gamePaused) {
                 // Continue rendering even when game is not active (for start screen)
@@ -1235,15 +1199,13 @@
                     if (obstacle.position.z > camera.position.z + 2) {
                         scene.remove(obstacle);
                         obstacles.splice(i, 1);
-                        score++;
+                        score++; // Increase score when obstacle is passed
                         updateScoreDisplay();
-                        showScorePopup(1);
-                        // Phát âm thanh 'ting' nhẹ nhàng hơn
-                        scoreSynth.triggerAttackRelease("A5", "16n", undefined, 0.5); // Đã chuyển vào showScorePopup, có thể bỏ dòng này nếu muốn
+                        scoreSynth.triggerAttackRelease("C5", "32n"); // Play score sound
 
                         // Boost regeneration - only when successfully avoiding obstacles
                         if (!boostActive && playerStats.boost < playerStats.maxBoost) {
-                            playerStats.boost = Math.min(playerStats.maxBoost, playerStats.boost + 4); // +4 boost per obstacle avoided (gấp đôi trước đây)
+                            playerStats.boost = Math.min(playerStats.maxBoost, playerStats.boost + 2); // +2 boost per obstacle avoided
                         }
 
                         // Increase difficulty every 10 points
@@ -1279,15 +1241,15 @@
                                 obstacles.splice(i, 1);
                                 score += 2; // Bonus points for destroying obstacle while invincible
                                 updateScoreDisplay();
-                                showScorePopup(2, "bonus");
+                                // Play special invincible collision sound
                                 if (scoreSynth) {
                                     scoreSynth.triggerAttackRelease("F#5", "32n");
                                 }
                                 continue;
                             } else {
-                                createCollisionParticles(car.position);
-                                endGame();
-                                break;
+                                createCollisionParticles(car.position); // Create particles at collision point
+                                endGame(); // Game over on collision
+                                break; // Exit loop immediately after game over
                             }
                         }
                     }
