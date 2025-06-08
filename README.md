@@ -33,6 +33,12 @@ Then navigate to `http://localhost:8000` in your browser.
 - **Responsive & Mobile Controls**: Mobile controls are hidden on desktop, and all controls are touch-friendly. Layout adapts to all screen sizes.
 - **Performance Optimizations**: Scripts loaded with async/defer, optimized class/ID naming, and structure for fast rendering.
 - **Fixed Camera View**: The camera is now fixed for a consistent racing experience. Mouse-based camera rotation for debugging has been removed to avoid distraction and provide a better gameplay experience.
+- **Motion Blur (Hiệu ứng mờ chuyển động)**: Khi xe đạt tốc độ cao, hiệu ứng motion blur nhẹ sẽ được áp dụng cho các vật thể chuyển động (đường, chướng ngại vật, cây cối) để tăng cảm giác tốc độ. Sử dụng Three.js EffectComposer và AfterimagePass.
+- **Speed Lines/Distortion Effects (Hiệu ứng đường tốc độ)**: Khi kích hoạt Boost, các đường tốc độ xuất hiện ở cạnh màn hình tạo hiệu ứng không khí bị đẩy lùi, kết hợp với overlay ánh sáng để tăng cảm giác tốc độ extreme.
+- **Hiệu ứng va chạm nâng cao (Particle Effects)**: Khi va chạm, hiệu ứng hạt sẽ thay đổi tùy loại va chạm:
+  - Va chạm khi đang Boost Invincible: xuất hiện hạt lửa (đỏ/cam/vàng) và hạt vụn kim loại (bạc/xám).
+  - Va chạm thông thường: xuất hiện hạt khói (xám/đen) và hạt vụn kim loại.
+  - Các hiệu ứng này giúp tăng cảm giác vật lý và chân thực cho trò chơi.
 
 ## Usage
 

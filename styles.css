@@ -384,6 +384,219 @@ body {
             display: none;
         }
 
+        /* Speed Lines Effects for Boost */
+        #speed-lines-container {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        #speed-lines-container.show {
+            opacity: 1;
+        }
+
+        /* Vertical speed lines (left and right sides) */
+        .speed-lines-left, .speed-lines-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .speed-line {
+            width: 4px;
+            height: 60px;
+            background: linear-gradient(180deg, transparent 0%, #ffff66 50%, transparent 100%);
+            border-radius: 2px;
+            opacity: 0.8;
+            animation: speedLineMove 0.3s linear infinite;
+            box-shadow: 0 0 8px #ffff66;
+        }
+
+        .speed-line:nth-child(2n) {
+            animation-delay: 0.1s;
+            height: 80px;
+        }
+
+        .speed-line:nth-child(3n) {
+            animation-delay: 0.2s;
+            height: 40px;
+            background: linear-gradient(180deg, transparent 0%, #ffd700 50%, transparent 100%);
+            box-shadow: 0 0 6px #ffd700;
+        }
+
+        .speed-line:nth-child(4n) {
+            animation-delay: 0.15s;
+            height: 70px;
+            background: linear-gradient(180deg, transparent 0%, #ffaa00 50%, transparent 100%);
+            box-shadow: 0 0 4px #ffaa00;
+        }
+
+        /* Horizontal speed lines (top and bottom) */
+        .speed-lines-top, .speed-lines-bottom {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .speed-line-horizontal {
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent 0%, #ffff66 50%, transparent 100%);
+            border-radius: 2px;
+            opacity: 0.8;
+            animation: speedLineHorizontalMove 0.25s linear infinite;
+            box-shadow: 0 0 8px #ffff66;
+        }
+
+        .speed-line-horizontal:nth-child(2n) {
+            animation-delay: 0.08s;
+            width: 80px;
+        }
+
+        .speed-line-horizontal:nth-child(3n) {
+            animation-delay: 0.16s;
+            width: 40px;
+            background: linear-gradient(90deg, transparent 0%, #ffd700 50%, transparent 100%);
+            box-shadow: 0 0 6px #ffd700;
+        }
+
+        .speed-line-horizontal:nth-child(4n) {
+            animation-delay: 0.12s;
+            width: 70px;
+            background: linear-gradient(90deg, transparent 0%, #ffaa00 50%, transparent 100%);
+            box-shadow: 0 0 4px #ffaa00;
+        }
+
+        /* Animation for vertical speed lines (moving toward center) */
+        @keyframes speedLineMove {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateX(15px) scale(1.2);
+            }
+            100% {
+                transform: translateX(30px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Left side speed lines move right */
+        .speed-lines-left .speed-line {
+            animation-name: speedLineMoveRight;
+        }
+
+        @keyframes speedLineMoveRight {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateX(15px) scale(1.2);
+            }
+            100% {
+                transform: translateX(30px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Right side speed lines move left */
+        .speed-lines-right .speed-line {
+            animation-name: speedLineMoveLeft;
+        }
+
+        @keyframes speedLineMoveLeft {
+            0% {
+                transform: translateX(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateX(-15px) scale(1.2);
+            }
+            100% {
+                transform: translateX(-30px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Animation for horizontal speed lines */
+        @keyframes speedLineHorizontalMove {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateY(10px) scale(1.2);
+            }
+            100% {
+                transform: translateY(20px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Top speed lines move down */
+        .speed-lines-top .speed-line-horizontal {
+            animation-name: speedLineHorizontalMoveDown;
+        }
+
+        @keyframes speedLineHorizontalMoveDown {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateY(10px) scale(1.2);
+            }
+            100% {
+                transform: translateY(20px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Bottom speed lines move up */
+        .speed-lines-bottom .speed-line-horizontal {
+            animation-name: speedLineHorizontalMoveUp;
+        }
+
+        @keyframes speedLineHorizontalMoveUp {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 0;
+            }
+            50% {
+                opacity: 0.8;
+                transform: translateY(-10px) scale(1.2);
+            }
+            100% {
+                transform: translateY(-20px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced boost active state with speed effect overlay */
+        .boost-active-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 60%, rgba(255, 255, 102, 0.1) 100%);
+            pointer-events: none;
+            z-index: 5;
+            animation: boostOverlayPulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes boostOverlayPulse {
+            0% {
+                background: radial-gradient(circle at center, transparent 60%, rgba(255, 255, 102, 0.05) 100%);
+            }
+            100% {
+                background: radial-gradient(circle at center, transparent 60%, rgba(255, 255, 102, 0.15) 100%);
+            }
+        }
+
         /* Mobile responsiveness improvements */
         @media (max-width: 768px) {
             .game-container {

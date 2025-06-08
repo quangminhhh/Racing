@@ -11,6 +11,10 @@
         let fadeStartTime = 0;
         const FADE_DURATION = 1000; // milliseconds for environment transitions
 
+        // Post-processing for motion blur effects
+        let composer, renderPass, afterimagePass;
+        let motionBlurEnabled = true;
+
         let score = 0;
         let highScore = localStorage.getItem('carRacingHighScore') || 0;
         let gameActive = false;
@@ -367,6 +371,54 @@
             applyTimeOfDaySettings(weatherState.timeOfDay);
             updateFog();
             updateWeatherDisplay();
+
+            // Initialize motion blur post-processing
+            initMotionBlur();
+        }
+
+        /**
+         * Initialize motion blur post-processing effects
+         */
+        function initMotionBlur() {
+            // Create effect composer for post-processing
+            composer = new THREE.EffectComposer(renderer);
+
+            // Create render pass for the main scene
+            renderPass = new THREE.RenderPass(scene, camera);
+            composer.addPass(renderPass);
+
+            // Create afterimage pass for motion blur effect
+            afterimagePass = new THREE.AfterimagePass(0.8); // Start with mild effect
+            afterimagePass.renderToScreen = true;
+            composer.addPass(afterimagePass);
+
+            // Resize composer when window is resized
+            composer.setSize(gameContainer.offsetWidth, gameContainer.offsetHeight);
+        }
+
+        /**
+         * Update motion blur intensity based on current speed
+         */
+        function updateMotionBlur() {
+            if (!afterimagePass || !motionBlurEnabled) return;
+
+            // Calculate motion blur intensity based on speed
+            // Higher speed = more intense blur effect
+            const speedFactor = Math.min(currentRoadSpeed / INITIAL_ROAD_SPEED, 3.0); // Cap at 3x for max effect
+            const baseIntensity = 0.7; // Base intensity for motion blur
+            const maxIntensity = 0.95; // Maximum intensity when at highest speed
+
+            // Apply extra intensity during boost
+            const boostMultiplier = boostActive ? 1.3 : 1.0;
+
+            // Calculate final intensity with smooth interpolation
+            const targetIntensity = Math.min(
+                baseIntensity + (maxIntensity - baseIntensity) * (speedFactor - 1) / 2,
+                maxIntensity
+            ) * boostMultiplier;
+
+            // Smooth transition to target intensity
+            afterimagePass.uniforms.damp.value += (targetIntensity - afterimagePass.uniforms.damp.value) * 0.1;
         }
 
         /**
@@ -376,6 +428,11 @@
             camera.aspect = gameContainer.offsetWidth / gameContainer.offsetHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(gameContainer.offsetWidth, gameContainer.offsetHeight);
+
+            // Update composer size for motion blur effects
+            if (composer) {
+                composer.setSize(gameContainer.offsetWidth, gameContainer.offsetHeight);
+            }
         }
 
         /**
@@ -757,13 +814,14 @@
         /**
          * Creates and adds collision particles to the scene.
          * @param {THREE.Vector3} position - The position where particles should appear.
+         * @param {string} [type] - Type of collision: 'fire', 'smoke', 'metal', or 'default'.
          */
-        function createCollisionParticles(position) {
+        function createCollisionParticles(position, type = 'default') {
             const particleCount = 50;
             const geometry = new THREE.BufferGeometry();
             const positions = [];
             const colors = [];
-            const color = new THREE.Color(0xFFFFFF); // White particles
+            let color;
 
             for (let i = 0; i < particleCount; i++) {
                 // Random position around the collision point
@@ -771,6 +829,23 @@
                 positions.push(position.y + (Math.random() - 0.5) * 2);
                 positions.push(position.z + (Math.random() - 0.5) * 2);
 
+                // Choose color based on type
+                if (type === 'fire') {
+                    // Red/orange/yellow fire
+                    const fireColors = [0xff4500, 0xffa500, 0xffff00];
+                    color = new THREE.Color(fireColors[Math.floor(Math.random() * fireColors.length)]);
+                } else if (type === 'smoke') {
+                    // Gray/black smoke
+                    const smokeGray = Math.random() * 0.3 + 0.1;
+                    color = new THREE.Color(smokeGray, smokeGray, smokeGray);
+                } else if (type === 'metal') {
+                    // Silver/white/gray spark
+                    const metalColors = [0xdcdcdc, 0xffffff, 0xaaaaaa];
+                    color = new THREE.Color(metalColors[Math.floor(Math.random() * metalColors.length)]);
+                } else {
+                    // Default: white
+                    color = new THREE.Color(0xffffff);
+                }
                 colors.push(color.r, color.g, color.b);
             }
 
@@ -778,7 +853,7 @@
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
             const material = new THREE.PointsMaterial({
-                size: 0.2,
+                size: type === 'smoke' ? 0.4 : 0.2,
                 vertexColors: true,
                 transparent: true,
                 opacity: 1,
@@ -947,6 +1022,7 @@
             // Enhanced visual and audio feedback
             const timerBar = document.getElementById('boost-timer-bar');
             const readyNotification = document.getElementById('boost-ready-notification');
+            const speedLinesContainer = document.getElementById('speed-lines-container');
 
             // Show timer bar with smooth animation
             timerBar.classList.remove('hidden');
@@ -955,6 +1031,16 @@
             // Hide ready notification immediately
             readyNotification.classList.remove('show');
             readyNotification.classList.add('hidden');
+
+            // Show speed lines effects
+            speedLinesContainer.classList.remove('hidden');
+            speedLinesContainer.classList.add('show');
+
+            // Create boost overlay effect
+            const boostOverlay = document.createElement('div');
+            boostOverlay.id = 'boost-active-overlay';
+            boostOverlay.className = 'boost-active-overlay';
+            document.body.appendChild(boostOverlay);
 
             // Enhanced car glow effect
             if (car && car.children) {
@@ -988,8 +1074,20 @@
 
             // Enhanced visual feedback for boost end
             const timerBar = document.getElementById('boost-timer-bar');
+            const speedLinesContainer = document.getElementById('speed-lines-container');
+            const boostOverlay = document.getElementById('boost-active-overlay');
+
             timerBar.classList.remove('show');
             timerBar.classList.add('hidden');
+
+            // Hide speed lines effects
+            speedLinesContainer.classList.remove('show');
+            speedLinesContainer.classList.add('hidden');
+
+            // Remove boost overlay effect
+            if (boostOverlay) {
+                boostOverlay.remove();
+            }
 
             // Remove invincible effect with smooth transition
             if (car && car.children) {
@@ -1109,7 +1207,11 @@
         function animate() {
             if (!gameActive && !gamePaused) {
                 // Continue rendering even when game is not active (for start screen)
-                renderer.render(scene, camera);
+                if (composer && motionBlurEnabled) {
+                    composer.render();
+                } else {
+                    renderer.render(scene, camera);
+                }
                 animationFrameId = requestAnimationFrame(animate);
                 return;
             }
@@ -1205,7 +1307,7 @@
 
                         // Boost regeneration - only when successfully avoiding obstacles
                         if (!boostActive && playerStats.boost < playerStats.maxBoost) {
-                            playerStats.boost = Math.min(playerStats.maxBoost, playerStats.boost + 2); // +2 boost per obstacle avoided
+                            playerStats.boost = Math.min(playerStats.maxBoost, playerStats.boost + 6); // +6 boost per obstacle avoided (gấp 3 lần)
                         }
 
                         // Increase difficulty every 10 points
@@ -1234,8 +1336,9 @@
 
                         if (carBox.intersectsBox(obstacleBox)) {
                             if (boostInvincible) {
-                                // Enhanced invincible collision effect
-                                createCollisionParticles(obstacle.position);
+                                // Enhanced invincible collision effect: fire and metal debris
+                                createCollisionParticles(obstacle.position, 'fire');
+                                createCollisionParticles(obstacle.position, 'metal');
                                 // Remove the obstacle and add extra score for invincible collision
                                 scene.remove(obstacle);
                                 obstacles.splice(i, 1);
@@ -1247,7 +1350,9 @@
                                 }
                                 continue;
                             } else {
-                                createCollisionParticles(car.position); // Create particles at collision point
+                                // Normal collision: smoke and metal debris
+                                createCollisionParticles(car.position, 'smoke');
+                                createCollisionParticles(car.position, 'metal');
                                 endGame(); // Game over on collision
                                 break; // Exit loop immediately after game over
                             }
@@ -1258,6 +1363,9 @@
                 updateParticles(); // Update collision particles
                 updateCameraShake(); // Update camera shake effect
                 updateRain();
+
+                // Update motion blur effects based on current speed
+                updateMotionBlur();
 
                 // --- HUD updates ---
                 // Simulate speed for demo
@@ -1290,7 +1398,13 @@
                     }
                 }
             }
-            renderer.render(scene, camera);
+
+            // Use motion blur post-processing if enabled, otherwise use standard rendering
+            if (composer && motionBlurEnabled) {
+                composer.render();
+            } else {
+                renderer.render(scene, camera);
+            }
         }
 
         // Initialize Three.js on window load

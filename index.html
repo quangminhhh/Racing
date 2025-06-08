@@ -8,6 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js CDN for 3D rendering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Three.js Post-processing modules for motion blur effects -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/AfterimagePass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
     <!-- Tone.js CDN for sound effects -->
     <script src="https://unpkg.com/tone@14.7.58/build/Tone.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -108,6 +114,46 @@
         <div id="boost-timer-bar" class="fixed top-10 left-1/2 transform -translate-x-1/2 z-50 hidden w-64 h-5 bg-gray-800 rounded-full border-2 border-yellow-400 flex items-center shadow-lg">
             <div id="boost-timer-inner" class="h-5 rounded-full bg-gradient-to-r from-yellow-300 to-pink-400 transition-all boost-timer-inner"></div>
             <span class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold text-yellow-900 drop-shadow">BOOST!</span>
+        </div>
+
+        <!-- Speed Lines Container (for boost effects) -->
+        <div id="speed-lines-container" class="fixed inset-0 z-10 pointer-events-none hidden">
+            <!-- Left side speed lines -->
+            <div class="speed-lines-left absolute left-0 top-0 w-20 h-full">
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+            </div>
+            <!-- Right side speed lines -->
+            <div class="speed-lines-right absolute right-0 top-0 w-20 h-full">
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+                <div class="speed-line"></div>
+            </div>
+            <!-- Top speed lines -->
+            <div class="speed-lines-top absolute top-0 left-0 w-full h-20">
+                <div class="speed-line-horizontal"></div>
+                <div class="speed-line-horizontal"></div>
+                <div class="speed-line-horizontal"></div>
+                <div class="speed-line-horizontal"></div>
+            </div>
+            <!-- Bottom speed lines -->
+            <div class="speed-lines-bottom absolute bottom-0 left-0 w-full h-20">
+                <div class="speed-line-horizontal"></div>
+                <div class="speed-line-horizontal"></div>
+                <div class="speed-line-horizontal"></div>
+                <div class="speed-line-horizontal"></div>
+            </div>
         </div>
 
         <!-- Boost Ready Notification (centered, highly visible) -->
